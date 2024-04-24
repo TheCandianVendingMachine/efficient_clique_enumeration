@@ -1,0 +1,456 @@
+\documentclass{article}
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{caption}
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{cor}[thm]{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[]
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
+\newtheorem*{note}{Note}
+\newtheorem*{case}{Case}
+
+% taken from https://tex.stackexchange.com/a/218450
+\newcounter{nalg}[section] % defines algorithm counter for chapter-level
+\renewcommand{\thenalg}{\thesection .\arabic{nalg}} %defines appearance of the algorithm counter
+\DeclareCaptionLabelFormat{algocaption}{Algorithm \thenalg} % defines a new caption label as Algorithm x.y
+
+\lstnewenvironment{algorithm}[1][] %defines the algorithm listing environment
+{
+    \refstepcounter{nalg} %increments algorithm number
+    \captionsetup{labelformat=algocaption,labelsep=colon} %defines the caption setup for: it ises label format as the declared caption label above and makes label and caption text to be separated by a ':'
+    \lstset{ %this is the stype
+        mathescape=true,
+        frame=tB,
+        numbers=left,
+        numberstyle=\tiny,
+        basicstyle=\scriptsize,
+        keywordstyle=\color{black}\bfseries\em,
+        keywords={,input, output, return, datatype, function, in, if, else, foreach, while, begin, end, } %add the keywords you want, or load a language as Rubens explains in his comment above.
+        numbers=left,
+        xleftmargin=.04\textwidth,
+        #1 % this is to add specific settings to an usage of this environment (for instnce, the caption and referable label)
+    }
+}
+{}
+
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+\SetMathAlphabet{\mathcal}{bold}{OMS}{cmsy}{b}{n}
+
+\newcommand{\bigO}{\mathcal{O}}
+\newcommand{\cn}[1]{ {{CN}_{#1}} }
+\newcommand{\ce}[1]{ {{CE}_{#1}} }
+\newcommand{\vdeg}[1]{ {\text{deg}({#1})} }
+\newcommand{\ignv}[1]{ {I_{#1}} }
+\newcommand{\nev}[1]{ {N_{#1}} }
+\newcommand{\mdeg}{ {\Delta(G)} }
+
+\title{An Efficient Algorithm for Listing Maximal Cliques in Arbitrary Graphs}
+\author{Bailey Danyluk}
+\date{April 21, 2024}
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The clique problem has previously been known to be solvable in exponential time (!! CITE BEST KNOWN CASE !!). In this
+paper, I outline new properties of maximal cliques such that they are able to be
+enumerated in a worst case of \(\bigO(|V|^6)\).
+\end{abstract}
+
+\section{Introduction}
+TBD
+
+\section{New properties of a clique in a given graph}
+
+In this section, a series of sets will be described that can be constructed such that they
+can identify cliques with only set operations on a vertex and it's neighbours. Likewise,
+the maximum size of every relevant set will be proved for algorithm analysis in a later
+section.
+
+\subsection{Preliminary definitions}
+% Define what a clique is
+\begin{defn}
+    Let \(G\) be some graph with vertices \(V\). The set \(\{ C_1, C_2, \dots, C_k \}\)
+    where \(C_i \in V\) is a member of an arbitrary maximal \(k\)-clique in \(G\). We call
+    this set \(C\).
+    \label{clique_def}
+\end{defn}
+
+% Define the vertices which are adjacent which are not apart of the clique
+\begin{defn}
+    Let \(u \in C\). \(\ignv{u}\) is the set of neighbours of \(u\) which are not in \(C\).
+    That is, \(\ignv{u} = \{ \ignv{u}_1, \ignv{u}_2, \dots, \ignv{u}_i \}\) where
+    \(\ignv{u}_j\) is a neighbour of \(u\) such that \(\ignv{u} \cap C = \emptyset\).
+\end{defn}
+
+\begin{rem}
+    The assumption that \(C\) is maximal can be made since \(C\) is not constructed; it is
+    just a subset that must exist within the neighbours of some \(u \in V\). If \(C\) is
+    not maximal, we can remove the missing vertices from \(\ignv{u}\) and add them to
+    \(C\).
+\end{rem}
+
+% Show that there exists a vertex which doesnt share neighbours in common with at least
+% two other vertices in the clique
+\begin{lem}
+    Let \(u, v \in C\) where \((\ignv{u} \cup \ignv{v}) \neq \emptyset\). There must exist
+    \(w \in C\) such that \(\ignv{w} \cap (\ignv{u} \cap \ignv{v}) = \emptyset\).
+    \begin{proof}
+        If we were unable to pick \(w \in C\) such that
+        \(\ignv{w} \cap (\ignv{u} \cap \ignv{v}) = \emptyset\), that would mean that there
+        exists a vertex in \(V\) which every vertex in \(C\) has an edge to that is not in
+        \(C\). This means that \(C\) is not maximal, or \(w \in C\). Therefore, there must
+        be at least one \(w \in C\) such that \(\ignv{w}\) is disjoint from
+        \(\ignv{u} \cap \ignv{v}\).
+    \end{proof}
+    \label{disjoint_neighbours}
+\end{lem}
+
+% Define the neighbours of a vertex
+\begin{defn}
+    Let \(u \in C\). \(\nev{u}\) are all vertices reachable in at most a single step from
+    \(u\). That is, \(\nev{u} = \ignv{u} \cup C\).
+    \begin{note}
+        This is different than just all vertices adjacent to \(u\). \(u \in \nev{u}\)
+        since \(u \in C\). This follows from the definition since \(u\) is zero steps from
+        itself.
+    \end{note}
+\end{defn}
+
+\begin{cor}
+    Let \(u \in V\). \(|\nev{u}| = \vdeg{u} + 1\).
+\end{cor}
+
+\begin{cor}
+    \(\forall u \in V\), \(|\nev{u}| \leq |V|\). \label{neighbour_size}
+\end{cor}
+
+\begin{rem}
+    Every vertex in a graph is apart of some clique. This clique may just be \(K_1\) or
+    \(K_2\), but these are maximal cliques which need to be counted to properly create the
+    list.
+\end{rem}
+
+\subsection{Common Neighbours of a Vertex}
+
+% Define common neighbours
+\begin{defn}
+    Let \(u \in V\). \(\cn{u}_i\) is the set of vertices in \(\nev{u}\) which \(u\) shares
+    with it's \(i\)-th neighbour \(\nev{u}_i\).
+\end{defn}
+
+\begin{defn}
+    \(\cn{u}\) is the set which lists all neighbours which \(u\) has in common with any of
+    it's neighbours. That is, if \(u\) can reach a vertex \(v\) and some neighbour of
+    \(u\) can also reach the vertex \(v\), then \(v\) exists within some subset of
+    \(\cn{u}\).
+\end{defn}
+
+We can construct \(\cn{u}\) by intersecting \(\nev{u}\) with the neighbours of \(u\)'s
+i-th neighbour.
+\begin{equation}
+    \cn{u} = \bigcup_{i=1}^{\vdeg{u}} \{ \nev{u} \cap \nev{v} \}, v = {\nev{u}}_i
+    \label{cn_construct}
+\end{equation}
+
+\begin{lem}
+    Let \(u, v \in C\) where \(u \neq v\) and \(\ignv{u} \cap \ignv{v} = \emptyset\). Then
+    \(\cn{u}_i \cap \cn{v}_j = C\) for any \(i, j\).
+    \label{cn_no_common}
+    \begin{proof}
+        Let \(u, v \in C\) such that \(u \neq v\).
+        \(\cn{u} \cap \cn{v} = (\ignv{u} \cup C) \cap (\ignv{v} \cup C)\). Since
+        \(\ignv{u} \cap \ignv{v} = \emptyset\), we can see that the previous statement is
+        equal to \(C = C \cup (\ignv{u} \cap \ignv{v}) = C \cup \emptyset\).
+    \end{proof}
+\end{lem}
+
+\begin{cor}
+    For some \(u \in V\), \(\cn{u}\) only contains vertices which \(u\) is adjacent to.
+    \label{cn_exclusive_neighbours}
+\end{cor}
+
+% Prove size of Common Neighbours
+\begin{cor}
+    \(\forall u \in V\), \(|\cn{u}| = \vdeg{u}\)
+\end{cor}
+\begin{cor}
+    \(\forall u \in V\), \(|\cn{u}| \leq |V| - 1\)
+    \label{max_cn}
+\end{cor}
+
+So, \(\cn{u}\) is a set of neighbours which \(u\) has in common with an adjacent vertex
+\(v\). This set will be used in the next section to create another set which will list all
+edges which \(u\) shares with all of it's neighbours.
+
+\subsection{Common Edges of a Vertex}
+
+% Define Common Edges
+\begin{defn}
+    Let \(u \in V\). \(\ce{u}_i\) is the set of edges in \(\nev{u}\) which \(u\) shares
+    with it's \(i\)-th neighbour \({\nev{u}}_i\).
+\end{defn}
+
+We can construct \(\ce{u}_i\) by intersecting \(\cn{u}_i\) with the j-th neighbour's
+common neighbours, \(\forall \cn{(\nev{u}_j)}\). When we take the union of all of these
+intersections, we will have constructed \(\ce{u}\).
+
+% Prove that these are indeed common edges
+\begin{equation}
+    e(u, n, i, j) =
+    \begin{cases}
+        \cn{u}_i \cap {\cn{n}}_j,n \in \nev{u},&
+            \text{if } u \in (\cn{u} \cap \cn{n}) \\
+            & \text{ and } n \in (\cn{u} \cap \cn{n})
+        \\
+        \emptyset,& \text{otherwise}
+    \end{cases}
+    \label{edge_construction}
+\end{equation}
+
+\begin{rem}
+    We do have to check if both vertices are in the resulting intersection. Consider a
+    path graph, and select a vertex, \(u\), not on the ends. Both neighbours of this path
+    graph will attempt to intersect their neighbours \(\neq u\) with \(u\). The resulting
+    set will be the set that only contains the neighbour. This doesn't fit our definition
+    of \(CE{u}_i\), so we ignore these values.
+\end{rem}
+
+\begin{lem}
+    Equation (\ref{edge_construction}) will be a set that strictly contains vertices that
+    both \(u \in V\) and it's \(k\)-th neighbour have an edge to.
+    \begin{proof}
+        Let \(u \in V\), \(E_u = \cn{u}_i\) and \(E_v = \cn{v}_j\) where \(v = \nev{u}_k\)
+        for some \(i\), \(j\). Because \(u\) and \(v\) are neighbours, an edge exists
+        between \(u\) and all vertices in \(E_u\) from (\ref{cn_exclusive_neighbours}).
+        Likewise, the same argument applies for \(v\) and \(E_v\). When we intersect
+        \(E_u \cap E_v\), the resulting set will be vertices that both \(u\) and \(v\)
+        have an edge to.
+    \end{proof}
+    \label{unique_edges}
+\end{lem}
+
+% Define CE
+\begin{defn}
+    Let \(u \in V\). \(\ce{u}\) is the set which contains sets of all edges,
+    \(e(u, n, i ,j)\), which \(u\) has in common with all of it's neighbours
+    \(n \in \nev{u}\).
+\end{defn}
+
+% Construct the entire common edge set
+\begin{lem}
+    For some \(u \in V\)
+    \begin{equation}
+        \ce{u} = \bigcup_{i=1}^{|\cn{u}|}
+            \bigcup_{k=1}^{|\nev{u}|}
+                \{ n = \nev{u}_k \mid
+                \bigcup_{j=1}^{|\cn{n}|} \{ e(u, n, i, j) \} \}
+    \end{equation}
+    \begin{proof}
+        Let \(u \in V\). What this abuse of notation does is: for the \(i\)-th iteration,
+        we take the \(i\)-th common neighbour of \(u\) and test it against every neighbours
+        common neighbours using the function we defined in (\ref{edge_construction}). So,
+        we will get a set of common edges that both \(u\) and every neighbour in
+        \(\nev{u}\) have. This is the definition of \(\ce{u}\).
+    \end{proof}
+    \label{ce_construct}
+\end{lem}
+
+% Prove that the set is bounded by polynomial size
+\begin{lem}
+    Let \(u \in V\). \(|\ce{u}| \leq |V|^3 \)
+    \begin{proof}
+        We know that for any \(u \in V\), \(|\cn{u}| = |V|\) from (\ref{max_cn}). Likewise,
+        the maximum size of \(\nev{u} = |V|\) as well from (\ref{neighbour_size}). So,
+        (\ref{ce_construct}) will take at most \(|V| \cdot |V| \cdot |V| = |V|^3\)
+        intersections to complete, only ever constructing \(|V|^3\) sets that all get
+        unioned into the main \(\ce{u}\) set.
+
+        \(\therefore |\ce{u}| \leq |V|^3\).
+    \end{proof}
+    \label{max_ce}
+\end{lem}
+
+% Prove C in CE theorem
+\begin{thm}
+    \(u \in C \iff C \in \ce{u}\).
+
+    \begin{proof}[Proof of \(u \in C \implies C \in \ce{u}\)]
+        Let \(u, v \in C\) where \(u \neq v\).
+        \begin{note}
+            \(C \in \nev{u}\) and \(C \in \nev{v}\) since \(u\) and \(v\) are chosen from
+            the same clique.
+        \end{note}
+        There are two cases to consider:
+        \begin{case}[\(\ignv{u}\) has no elements in common with \(\ignv{v}\)]
+            So, \(\ignv{u} \cap \ignv{v} = \emptyset\).
+
+            From (\ref{cn_no_common})
+            we know that \(C \in \cn{u}_i\) and \(C \in \cn{v}_j\). When we construct
+            \(\ce{u}\), we will intersect \(\cn{u}_i \cap \cn{v}_j = C\).
+
+            \(\therefore C \in \ce{u}\).
+        \end{case}
+        \begin{case}[\(\ignv{u}\) has at least one element in common with \(\ignv{v}\)]
+            Pick some \(w \in C\) that has no non-clique neighbours in common with \(u\)
+            and \(v\). This is possible because of (\ref{disjoint_neighbours}). Let
+            \(\cn{u}_i = (\ignv{u} \cup C) \cap (\ignv{v} \cap C)\) (From construction of
+            \(\cn{}\), (\ref{cn_construct})). This means that
+            \(\exists j \leq \vdeg{w} \mid \cn{u}_i \cap \cn{w}_j = C\).
+
+            \(\therefore\) By construction of \(\ce{u}\), \(C \in \ce{u}\).
+        \end{case}
+    \end{proof}
+
+    \begin{proof}[Proof of \(u \in C \impliedby C \in \ce{u}\)]
+        Let \(u \in V\). Assume \(C \in \ce{u}\), but \(u \not\in C\). Pick \(v \in C\).
+
+        \begin{case}[\(v \in \nev{u}\)]
+            We will pick another \(v \in C\) such that \(v \not\in \nev{u}\). If we cannot
+            pick such a \(v\), that means that \(C\) is not maximal, or \(u \in C\).
+        \end{case}
+        \begin{case}[\(v \not\in \nev{u}\)]
+            From (\ref{cn_exclusive_neighbours}),
+            \(\forall i \leq \cn{u}, v \not\in \cn{u}_i\). However, for \(C \in \ce{u}\),
+            we must intersect \(\cn{u}\) with one of it's neighbours \(\cn{\nev{u}}\) so
+            that \(C\) is created. But since \(v\) is not in \(\cn{u}\) at all, we would
+            be missing \(v\), so \((C \setminus v) \in \ce{u}\). This is a contraction
+            that \(C \in \ce{u}\).
+
+            \(\therefore\) \(u\) must have an edge to \(v\). However, if we create this
+            edge, then \(u \in C\).
+        \end{case}
+        From the two cases, we see if \(C \in \ce{u}\) then \(u \in C\).
+    \end{proof}
+    \label{c_in_ce}
+\end{thm}
+
+\(\ce{u}\) is the set which lists all edges which \(u\) has in common with all of it's
+neighbours. That is, if \(u\) has an edge to vertex \(v\) and some neighbour of \(u\) also
+has an edge to the vertex \(v\), then \(v\) exists within some subset of \(\ce{u}\). We
+know that \(\ce{u}\)'s length is bounded by a polynomial (\ref{max_ce}), and that only
+vertices in a clique \(C\) will contain \(C \in \ce{u}\). Using these facts, in the next
+section we will develop an algorithm to list all cliques in a graph.
+
+\section{An algorithm to list maximal cliques in an arbitrary graph}
+In this section I will present an algorithm in multiple parts which, when combined, will
+list all maximal cliques in an arbitrary graph.
+
+\subsection{Algorithm}
+\begin{algorithm}[caption={Create Common Neighbour Set}, label={algo_cn_construct}]
+function: list_common_neighbours
+    input: Set of vertices V, Set of tuples $(v_i, v_j)$ called E
+    output: Set of common neighbours
+    begin
+        edge_reports $\gets$ {}
+        for v in V
+            neighbours $\gets$ adjacent vertices of v
+            for n in neighbours
+                edge $\gets$ the edge $(v, n) \in E$
+                if edge in edge_reports
+                    edge_reports[edge][2] $\gets$ neighbours
+                else
+                    edge_reports[edge] $\gets$ {neighbours,$\emptyset$}
+                end
+            end
+        end
+
+        common_neighbours = {}
+        for edge in E
+            ce $\gets$ edge_reports[edge][1] $\cap$ edge_reports[edge][2]
+            add ce to set common_neighbours[edge[1]]
+            add ce to set common_neighbours[edge[2]]
+        end
+
+        return common_neighbours
+    end
+\end{algorithm}
+
+\begin{algorithm}[caption={Create Common Edge Set}, label={algo_ce_construct}]
+function: list_common_edges
+    input: Set of vertices V, Set of tuples $(v_i, v_j)$ called E
+    output: Set of common edges
+    begin
+        common_neighbours $\gets$ common_neighbours(V, E)
+        common_edges $\gets$ {}
+
+        for u in V
+            for v in neighbour vertices of u
+                for Ucn in common_neighbours[u]
+                    for Vcn in common_neighbours[v]
+                        let ce = Ucn $\cap$ Vcn
+                        if u in ce and v in ce
+                            add ce to set common_edges[u]
+                        end
+                    end
+                end
+            end
+        end
+
+        return common_edges
+    end
+\end{algorithm}
+
+\begin{algorithm}[caption={List Maximal Cliques}, label={algo_list_cliques}]
+function: list_maximal_cliques
+    input: Set of vertices V, Set of tuples $(v_i, v_j)$ called E
+    output: Set of maximal cliques in the graph $(V, E)$
+    begin
+        common_edges $\gets$ common_edges(V, E)
+
+        cliques $\gets$ {}
+        for u in V
+            for Uce in common_edges[u]
+                clique $\gets$ {u}
+                for n in neighbours of V
+                    if Uce $\in$ common_edges[n]
+                        add n to clique
+                        remove Uce from common_edges[n]
+                    end
+                end
+
+                add clique to cliques
+                remove Uce from common_edges[n]
+            end
+        end
+
+        // Remove sub-cliques so we are left with only maximal
+        for c1 in cliques
+            for c2 in cliques
+                if c1 $\subset$ c2
+                    remove c1 from cliques
+                end
+            end
+        end
+
+        return cliques
+    end
+\end{algorithm}
+
+\begin{rem}
+    The reason non-maximal cliques exist is that the properties listed in the previous
+    section show that the maximal clique must exist, but are not necessarially
+    exclusive, in \(\ce{}\). Using the algorithm as described, it will never misreport a
+    clique since
+\end{rem}
+
+\section{Conclusion}
+
+\begin{cor}
+    \(P = NP\)
+    \begin{proof}
+        Proof is left as an exercise to the reader.
+    \end{proof}
+\end{cor}
+
+\end{document}

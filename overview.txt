@@ -1,0 +1,33 @@
+Overview:
+
+(1)
+We first get all nodes which are reachable from a given node in one jump. These neighbours
+are then reported on the edge which connect N and the working neighbour. This is to
+"report" to a potential clique member that they have similar neighbours.
+
+(2)
+The edge will then intersect the two connecting nodes' neighbour list. This provides
+information to both nodes of who they are connected to; if they have a neighbour in
+common, that neighbour will be reported on this edge. Because only one edge connects any
+two nodes, this is the only way to broadcast this information quickly.
+
+(3)
+For all edges from a node, we collect the "Common Neighbour" list reported on the edge and
+compile it into one list for the node. This new list will serve as the basis for filtering
+permutations of the graph which we don't care about.
+
+(4)
+For every node, we create a "Common Edge" list of sets. This new list will be constructed
+so that a set contains edges only reachable by the base node, and the neighbour we are
+consulting. We do this by looping through our node's "Common Neighbour" list and
+intersecting each subset with the neighbours "Common Neighbour" list, and adding the
+resulting set into the "Common Edge" list. This list now contains a set of vertices which
+are reachable by the node and all of it's neighbours.
+
+(5)
+For every element, `e`, in the "Common Edge" list, we test against all neighbour
+"Common Edge" lists by testing if `e` is a subset of some neighbour "Common Edge". If it
+is, we add it to a list of cliques. These cliques will be maximal because of a property of
+(4)
+
+
