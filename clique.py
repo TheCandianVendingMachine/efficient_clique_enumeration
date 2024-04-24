@@ -129,7 +129,11 @@ def enumerate_cliques(nodes, edges, return_info=False):
                     clique.add(neighbour)
                     common_edges[neighbour].remove(c)
 
-            cliques.add(tuple(clique))
+            # if the edge we report on is not equal to the clique size, clearly the other
+            # vertices in the common edge dont share at least one vertex. we dont add
+            # these since the clique cannot be maximal
+            if len(clique) == len(c):
+                cliques.add(tuple(clique))
 
     # Return maximal cliques:
     #  if clique_i is subset of clique_j, |clique_j| > |clique_i|, we remove it
@@ -137,6 +141,7 @@ def enumerate_cliques(nodes, edges, return_info=False):
     for i in cliques:
         for j in cliques:
             if len(j) > len(i) and set(i).issubset(set(j)):
+                print("r")
                 cliques_to_remove.append(i)
                 break
 
