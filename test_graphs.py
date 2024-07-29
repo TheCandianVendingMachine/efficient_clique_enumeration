@@ -566,10 +566,14 @@ def cocktail_graph(n):
         for j in range(i + 1, 2 * n + 1):
             if j == n + i:
                 continue
+            if i == j:
+                continue
             edges.append((i, j))
 
     for i in range(n + 1, 2 * n + 1):
         for j in range(i + 1, 2 * n + 1):
+            if i == j:
+                continue
             edges.append((i, j))
 
     return (vertices, edges)
