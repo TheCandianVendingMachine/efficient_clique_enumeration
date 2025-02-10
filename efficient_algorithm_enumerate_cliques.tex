@@ -100,22 +100,6 @@ section.
     \(C\).
 \end{rem}
 
-% Show that there exists a vertex which doesnt share neighbours in common with at least
-% two other vertices in the clique
-\begin{lem}
-    Let \(u, v \in C\) where \((\ignv{u} \cup \ignv{v}) \neq \emptyset\). There must exist
-    \(w \in C\) such that \(\ignv{w} \cap (\ignv{u} \cap \ignv{v}) = \emptyset\).
-    \begin{proof}
-        If we were unable to pick \(w \in C\) such that
-        \(\ignv{w} \cap (\ignv{u} \cap \ignv{v}) = \emptyset\), that would mean that there
-        exists a vertex in \(V\) which every vertex in \(C\) has an edge to that is not in
-        \(C\). This means that \(C\) is not maximal, or \(w \in C\). Therefore, there must
-        be at least one \(w \in C\) such that \(\ignv{w}\) is disjoint from
-        \(\ignv{u} \cap \ignv{v}\).
-    \end{proof}
-    \label{disjoint_neighbours}
-\end{lem}
-
 % Define the neighbours of a vertex
 \begin{defn}
     Let \(u \in C\). \(\nev{u}\) are all vertices reachable in at most a single step from
@@ -168,10 +152,10 @@ i-th neighbour.
     \(\cn{u}_i \cap \cn{v}_j = C\) for any \(i, j\).
     \label{cn_no_common}
     \begin{proof}
-        Let \(u, v \in C\) such that \(u \neq v\).
-        \(\cn{u} \cap \cn{v} = (\ignv{u} \cup C) \cap (\ignv{v} \cup C)\). Since
-        \(\ignv{u} \cap \ignv{v} = \emptyset\), we can see that the previous statement is
-        equal to \(C = C \cup (\ignv{u} \cap \ignv{v}) = C \cup \emptyset\).
+        Let \(u, v \in C\) such that \(u \neq v\), and \(i,j\) be some index of \(\cn{u},
+        \cn{v}\). \(\cn{u}_i \cap \cn{v}_j = (\ignv{u} \cup C) \cap (\ignv{v} \cup C)\).
+        Since \(\ignv{u} \cap \ignv{v} = \emptyset\), we can see that the previous
+        statement is equal to \(C = C \cup (\ignv{u} \cap \ignv{v}) = C \cup \emptyset\).
     \end{proof}
 \end{lem}
 
@@ -302,13 +286,7 @@ intersections, we will have constructed \(\ce{u}\).
             \(\therefore C \in \ce{u}\).
         \end{case}
         \begin{case}[\(\ignv{u}\) has at least one element in common with \(\ignv{v}\)]
-            Pick some \(w \in C\) that has no non-clique neighbours in common with \(u\)
-            and \(v\). This is possible because of (\ref{disjoint_neighbours}). Let
-            \(\cn{u}_i = (\ignv{u} \cup C) \cap (\ignv{v} \cap C)\) (From construction of
-            \(\cn{}\), (\ref{cn_construct})). This means that
-            \(\exists j \leq \vdeg{w} \mid \cn{u}_i \cap \cn{w}_j = C\).
-
-            \(\therefore\) By construction of \(\ce{u}\), \(C \in \ce{u}\).
+            not true
         \end{case}
     \end{proof}
 
@@ -324,7 +302,7 @@ intersections, we will have constructed \(\ce{u}\).
             \(\forall i \leq \cn{u}, v \not\in \cn{u}_i\). However, for \(C \in \ce{u}\),
             we must intersect \(\cn{u}\) with one of it's neighbours \(\cn{\nev{u}}\) so
             that \(C\) is created. But since \(v\) is not in \(\cn{u}\) at all, we would
-            be missing \(v\), so \((C \setminus v) \in \ce{u}\). This is a contraction
+            be missing \(v\), so \((C \setminus v) \in \ce{u}\). This is a contradiction
             that \(C \in \ce{u}\).
 
             \(\therefore\) \(u\) must have an edge to \(v\). However, if we create this

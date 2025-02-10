@@ -1,7 +1,9 @@
-import random
+import time
 
-DEBUG_PRINT = True
+DEBUG_PRINT = False
 DEBUG_ONLY_TEST = "cocktail_5"
+
+LOG_SECTION_TIME = True
 
 TEST_RANDOM = False
 
@@ -29,12 +31,14 @@ def verify_clique(test_clique, edges):
 # edges is a set of a 2-tuple of (node_id_1, node_id_2) where the ids are not the same
 #  -- edges are assumed to be: node_id_1 < node_id_2
 def enumerate_cliques(nodes, edges, return_info=False):
+    total_t0 = time.time()
     if DEBUG_PRINT:
         print("edges")
         print(edges)
         print()
 
     # 0) initialise graph data structures
+    t0 = time.time()
     neighbours = {}
     node_edges = {}
     for n in nodes:
@@ -56,8 +60,11 @@ def enumerate_cliques(nodes, edges, return_info=False):
         print("neighbours")
         for n, neighbour in neighbours.items():
             print(n, neighbour)
+    if LOG_SECTION_TIME:
+        print(f"Graph initialised in {time.time() - t0} seconds")
 
     # 1) report neighbours to edges
+    t0 = time.time()
     edge_neighbour_reports = {}
     for n in nodes:
         for e in node_edges[n]:
@@ -70,8 +77,11 @@ def enumerate_cliques(nodes, edges, return_info=False):
         print("edge reports")
         for e, r in edge_neighbour_reports.items():
             print(e, r)
+    if LOG_SECTION_TIME:
+        print(f"Edge reports done in {time.time() - t0} seconds")
 
     # 2) intersect edge reports to get common neighbours
+    t0 = time.time()
     edge_neighbour_intersections = {}
     for edge, reports in edge_neighbour_reports.items():
         intersections = reports[0].intersection(reports[1])
@@ -82,8 +92,11 @@ def enumerate_cliques(nodes, edges, return_info=False):
         print("edge intersections")
         for e, i in edge_neighbour_intersections.items():
             print(e, i)
+    if LOG_SECTION_TIME:
+        print(f"Edge reports intersected in {time.time() - t0} seconds")
 
     # 3) create common neighbours for all nodes
+    t0 = time.time()
     common_neighbours = {}
     for n in nodes:
         for edge in node_edges[n]:
@@ -96,8 +109,11 @@ def enumerate_cliques(nodes, edges, return_info=False):
         print("common neighbours")
         for n, cn in common_neighbours.items():
             print(n, cn)
+    if LOG_SECTION_TIME:
+        print(f"Common neighbours generated in {time.time() - t0} seconds")
 
     # 4) create common edges for all nodes
+    t0 = time.time()
     meta_common_edges = []
     common_edges = {}
     for n in nodes:
@@ -122,49 +138,34 @@ def enumerate_cliques(nodes, edges, return_info=False):
             print(n)
             for c in ce:
                 print("\t", c)
+    if LOG_SECTION_TIME:
+        print(f"Common edges generated in {time.time() - t0} seconds")
 
     # 5) consolodate common edges to find cliques
+    t0 = time.time()
     cliques = set()
     for n in nodes:
         cliques_to_add = set()
+        max_clique_size = 0
         for c in common_edges[n]:
             clique = set([n])
-            for neighbour in neighbours:
+            for neighbour in neighbours[n]:
                 if n == neighbour:
                     continue
-                if c in common_edges[neighbour]:
-                    clique.add(neighbour)
+                for cen in common_edges[neighbour]:
+                    i = set(cen).intersection(set(c))
+                    if n in i and n in i:
+                        clique = tuple(sorted(tuple(i)))
+                        if len(clique) >= max_clique_size and verify_clique(clique, edges):
+                            if len(clique) > max_clique_size:
+                                max_clique_size = len(clique)
+                                cliques_to_add.clear()
+                            cliques_to_add.add(clique)
 
-            # if the edge we report on is not equal to the clique size, clearly the other
-            # vertices in the common edge dont share at least one vertex. we dont add
-            # these since the clique cannot be maximal
-            if len(clique) == len(c):
-                cliques_to_add.add(tuple(clique))
-
-        cliques_to_remove = []
-        for i in cliques_to_add:
-            for j in cliques_to_add:
-                if len(j) > len(i) and set(i).issubset(set(j)):
-                    cliques_to_remove.append(i)
-                    break
-
-        for c in cliques_to_remove:
-            cliques_to_add.remove(c)
         cliques = cliques.union(cliques_to_add)
 
-    # Return maximal cliques:
-    #  if clique_i is subset of clique_j, |clique_j| > |clique_i|, we remove it
-    cliques_to_remove = []
-    for i in cliques:
-        for j in cliques:
-            if len(j) > len(i) and set(i).issubset(set(j)):
-                print(i, j)
-                print("r")
-                break
-
-    for c in cliques_to_remove:
-        cliques.remove(c)
-
+    if LOG_SECTION_TIME:
+        print(f"All maximal cliques found in {time.time() - t0} seconds")
 
     max_clique_size = 0
     max_cn_size = 0
@@ -178,6 +179,9 @@ def enumerate_cliques(nodes, edges, return_info=False):
 
     for ce in meta_common_edges:
         max_ce_size = max(max_ce_size, len(ce))
+
+    if LOG_SECTION_TIME:
+        print(f"Enumerated cliques in {time.time() - total_t0} seconds")
 
     if return_info:
         return (cliques, max_clique_size, max_cn_size, max_ce_size)
@@ -198,7 +202,7 @@ def test_graph(nodes, edges):
     vertex_count = len(nodes)
     edge_count = vertex_count * (vertex_count - 1) // 2
     print(f"|V| = {vertex_count}")
-    print(f"|E|_max: {vertex_count * (vertex_count - 1) // 2}")
+    print(f"|E|_max: {edge_count}")
     print(f"|E| = {len(edges)}")
     print(f"|cliques| = {len(cliques)}")
     print(f"max |CE| = {max_ce_size} <= {vertex_count**3} ({max_ce_size <= vertex_count**3})")
@@ -253,7 +257,12 @@ def main():
         ("cocktail_4", cocktail_graph(4)),
         ("cocktail_5", cocktail_graph(5)),
         ("cocktail_6", cocktail_graph(6)),
-        ("cocktail_20", cocktail_graph(20)),
+        ("cocktail_7", cocktail_graph(7)),
+        ("cocktail_8", cocktail_graph(8)),
+        ("cocktail_9", cocktail_graph(9)),
+        ("cocktail_10", cocktail_graph(10)),
+        ("cocktail_easier", cocktail_easier()),
+        ("cocktail_kinda", cocktail_kinda()),
     ]
 
     for name, (nodes, edges) in graphs:

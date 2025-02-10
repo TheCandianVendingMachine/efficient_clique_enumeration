@@ -1,3 +1,5 @@
+import random
+
 def k2():
     return (
         [1, 2],
@@ -573,6 +575,47 @@ def cocktail_graph(n):
             edges.append((i, j))
 
     return (vertices, edges)
+
+def cocktail_easier():
+    max_k = 5
+    g1_vertices, g1_edges = kn(max_k)
+    g2_vertices, g2_edges = kn(max_k)
+    g2_vertices = [v + max_k for v in g2_vertices]
+    g2_edges = [(v1 + max_k, v2 + max_k) for v1, v2 in g2_edges]
+
+    # If x == y == max_k, then this is equivalent to cocktail_(max_k)
+    x = 4
+    y = 5
+    k4_edges = []
+    for i in range(0, x):
+        for j in range(0, y):
+            if i == j:
+                continue
+            k4_edges.append((g1_vertices[i], g2_vertices[j]))
+
+    return (
+        g1_vertices + g2_vertices,
+        g1_edges + g2_edges + k4_edges
+    )
+
+def cocktail_kinda():
+    max_k = 5
+    g1_vertices, g1_edges = kn(max_k - 1)
+    g2_vertices, g2_edges = kn(max_k)
+    g2_vertices = [v + max_k for v in g2_vertices]
+    g2_edges = [(v1 + max_k, v2 + max_k) for v1, v2 in g2_edges]
+
+    k4_edges = []
+    for i in range(0, len(g1_vertices)):
+        for j in range(0, len(g2_vertices)):
+            if i == j:
+                continue
+            k4_edges.append((g1_vertices[i], g2_vertices[j]))
+
+    return (
+        g1_vertices + g2_vertices,
+        g1_edges + g2_edges + k4_edges
+    )
 
 def pretty_print_cliques(cliques):
     max_clique_size = 0
